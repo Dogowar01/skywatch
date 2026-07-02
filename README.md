@@ -17,9 +17,16 @@ beginner-friendly horizon strip. Tap anything for a short, friendly story.
 - Two views: **Sky dome** (horizon = edge, straight up = centre) and
   **Horizon strip** ("look SE, about 30° up")
 - Plain-language blurbs, no jargon, no engagement mechanics
+- **Rise & set times** for every object, and sunset / first-dark / sunrise
+  for your location
 - Time scrubber — see what's up at 9pm before you head out
-- Red **night-vision mode** for use in the dark
+- Stars drawn in their real colours (orange Betelgeuse, blue-white Rigel) and
+  gently twinkling — planets shine steady, just like the real sky
+- A lightweight **"I spotted it"** log — tick off what you've found
+- Red **night-vision mode** for use in the dark (swaps the photo backdrop for
+  pure low-glare red)
 - Knows whether it's actually dark enough to see anything, and says so
+- Milky Way photo backdrop, dimmed hard so the app stays readable outdoors
 
 ## Tech
 

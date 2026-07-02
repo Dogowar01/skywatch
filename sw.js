@@ -1,9 +1,10 @@
 /* Sky — service worker. Bump CACHE version on every deploy (Oracle pattern). */
-const CACHE = 'sky-v1.0.0';
+const CACHE = 'sky-v1.1.0';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './background.jpg',
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png'

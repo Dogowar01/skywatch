@@ -17,10 +17,12 @@
   --bg:#0a0e14;
   --panel:#111826;
   --panel2:#0d131f;
-  --line:#232c3d;
+  --panelA:rgba(14,20,32,.62);
+  --panelB:rgba(11,16,26,.55);
+  --line:rgba(148,168,205,.16);
   --ink:#ece3d2;
-  --dim:#9a917f;
-  --faint:#5d5748;
+  --dim:#a29a88;
+  --faint:#6b644f;
   --accent:#d9a95c;
   --star:#dfe7f2;
   --danger:#c96f5a;
@@ -29,7 +31,9 @@ body.nv{
   --bg:#0c0403;
   --panel:#150705;
   --panel2:#100504;
-  --line:#2c110c;
+  --panelA:rgba(21,7,5,.92);
+  --panelB:rgba(16,5,4,.92);
+  --line:rgba(224,80,60,.22);
   --ink:#e0503c;
   --dim:#96382a;
   --faint:#5c2119;
@@ -46,23 +50,46 @@ body{
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   transition:background .4s,color .4s;
 }
+/* the Milky Way backdrop — dimmed hard so the app stays readable on top */
+#bgphoto{
+  position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:url(background.jpg) center/cover no-repeat;
+  filter:brightness(.5) saturate(.9);
+}
+#bgveil{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,
+    rgba(10,14,20,.78) 0%, rgba(10,14,20,.30) 22%,
+    rgba(10,14,20,.30) 55%, rgba(10,14,20,.72) 82%, rgba(10,14,20,.90) 100%);
+}
+body.nv #bgphoto,body.nv #bgveil{display:none}
 .wrap{max-width:540px;margin:0 auto;padding:0 14px 60px}
 h1,h2,.serif{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
-header{display:flex;align-items:baseline;gap:10px;padding:18px 2px 6px}
-header h1{font-size:1.9rem;margin:0;letter-spacing:.04em;font-weight:600}
-header .tag{color:var(--faint);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase}
+header{display:flex;align-items:baseline;gap:10px;padding:18px 2px 0}
+header h1{font-size:1.9rem;margin:0;letter-spacing:.04em;font-weight:600;text-shadow:0 2px 18px rgba(0,0,0,.7)}
+header .tag{color:var(--dim);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase}
 header .spacer{flex:1}
+.tagline{
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-style:italic;color:var(--dim);font-size:.9rem;margin:2px 2px 10px;
+  text-shadow:0 1px 12px rgba(0,0,0,.8);
+}
+body.nv .tagline,body.nv header h1{text-shadow:none}
 button{
-  font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);
+  font:inherit;color:var(--ink);background:var(--panelB);border:1px solid var(--line);
   border-radius:10px;padding:8px 13px;cursor:pointer;min-height:40px;
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
 }
 button:active{transform:translateY(1px)}
 .chip{font-size:.82rem;color:var(--dim);background:transparent}
 .chip.on{color:var(--accent);border-color:var(--accent)}
 .card{
-  background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  background:var(--panelA);border:1px solid var(--line);border-radius:16px;
   padding:14px 16px;margin:12px 0;
+  -webkit-backdrop-filter:blur(18px) saturate(1.1);backdrop-filter:blur(18px) saturate(1.1);
+  box-shadow:0 10px 34px rgba(0,0,0,.35);
 }
+body.nv .card{box-shadow:none}
 #status{font-size:.95rem;line-height:1.5;color:var(--dim)}
 #status .big{color:var(--ink);font-size:1.05rem}
 #locline{font-size:.8rem;color:var(--faint);margin-top:6px}
@@ -79,9 +106,11 @@ h2{font-size:1.15rem;margin:22px 2px 4px;font-weight:600}
 .sub{color:var(--faint);font-size:.8rem;margin:0 2px 10px}
 .obj{
   display:flex;align-items:center;gap:13px;width:100%;text-align:left;
-  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  background:var(--panelA);border:1px solid var(--line);border-radius:14px;
   padding:12px 14px;margin:8px 0;min-height:60px;
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
 }
+.obj .tick{color:var(--accent);font-size:.8rem;margin-left:5px}
 .obj .dot{flex:0 0 34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .obj .dot canvas{display:block}
 .obj .txt{flex:1;min-width:0}
@@ -97,11 +126,15 @@ h2{font-size:1.15rem;margin:22px 2px 4px;font-weight:600}
 }
 .overlay.show{display:flex}
 .sheet{
-  background:var(--panel);border:1px solid var(--line);border-bottom:none;
+  background:var(--panelA);border:1px solid var(--line);border-bottom:none;
   border-radius:20px 20px 0 0;max-width:540px;width:100%;
   padding:20px 20px calc(24px + env(safe-area-inset-bottom));
   max-height:82vh;overflow-y:auto;
+  -webkit-backdrop-filter:blur(26px) saturate(1.1);backdrop-filter:blur(26px) saturate(1.1);
 }
+.sheet .rise{font-size:.85rem;color:var(--dim);margin:-6px 0 14px}
+.sheet .spot{width:100%;margin-top:10px;color:var(--accent);border-color:var(--accent)}
+.sheet .spot.done{color:var(--dim);border-color:var(--line)}
 .sheet h3{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:1.5rem;margin:0 0 2px}
 .sheet .kind{color:var(--faint);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
 .sheet .where{
@@ -125,20 +158,31 @@ h2{font-size:1.15rem;margin:22px 2px 4px;font-weight:600}
 .manual input[name=nm]{grid-column:1/3}
 .manual button{grid-column:1/3;color:var(--accent)}
 .note{font-size:.78rem;color:var(--faint);line-height:1.5;margin-top:10px}
+#suntimes{font-size:.83rem;color:var(--dim);margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.tip{
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-style:italic;font-size:.88rem;color:var(--dim);line-height:1.55;
+  padding:12px 16px;
+}
+.tip b{color:var(--accent);font-style:normal;font-weight:600;letter-spacing:.08em;font-size:.7rem}
 footer{margin-top:34px;text-align:center;color:var(--faint);font-size:.72rem;letter-spacing:.08em}
 </style>
 </head>
 <body>
+<div id="bgphoto"></div>
+<div id="bgveil"></div>
 <div class="wrap">
   <header>
     <h1>Sky</h1><span class="tag">Signal9</span>
     <span class="spacer"></span>
     <button id="nvBtn" class="chip" title="Red night-vision mode">Night&nbsp;vision</button>
   </header>
+  <p class="tagline">what’s that bright thing tonight?</p>
 
   <div class="card" id="statusCard">
     <div id="status"></div>
     <div id="locline"></div>
+    <div id="suntimes"></div>
   </div>
 
   <div class="card">
@@ -157,6 +201,8 @@ footer{margin-top:34px;text-align:center;color:var(--faint);font-size:.72rem;let
   <h2>Up right now</h2>
   <p class="sub" id="listSub"></p>
   <div id="list"></div>
+
+  <div class="card tip" id="tipCard"></div>
 
   <footer>SKY · SIGNAL9 · ALL MATH DONE ON YOUR PHONE · NOTHING LEAVES IT</footer>
 </div>
@@ -311,30 +357,32 @@ function altAz(ra,dec,lst,lat){
   return {az:rev(atan2d(y,xh)+180), alt:asind(zh)};
 }
 
-/* ---------- bright-star catalogue (J2000, RA in hours) ---------- */
+/* ---------- bright-star catalogue (J2000, RA in hours) ----------
+   [name, RA h, Dec °, mag, tint (rough spectral colour), blurb] */
 const STARS=[
- ['Sirius',6.7525,-16.716,-1.46,'The brightest star in the whole night sky, and one of our nearest neighbours — its light takes just 8.6 years to reach you. When it sits low it often twinkles wildly, flashing blue, white and red as our atmosphere shakes its light about.'],
- ['Canopus',6.3992,-52.696,-0.74,'The second-brightest star in the sky and a southern-hemisphere treasure. Sailors steered by it for centuries — and spacecraft still use it today to work out which way they are pointing.'],
- ['Alpha Centauri',14.6599,-60.834,-0.27,'The closest star system to our Sun, only 4.4 light-years away. What looks like a single bright point is really two suns circling each other, with a faint third — Proxima — tagging along.'],
- ['Arcturus',14.2610,19.182,-0.05,'An orange giant star, noticeably warm-coloured if you look carefully. The light landing in your eye right now left Arcturus about 37 years ago.'],
- ['Vega',18.6156,38.784,0.03,'A crisp blue-white star and one of the most studied in the sky — it was the first star ever photographed, back in 1850. In about 12,000 years it will take a turn as our pole star.'],
- ['Capella',5.2782,45.998,0.08,'Looks like one golden star, but it is actually two pairs of stars — four suns in all — packed into one point of light. Its name means "the little she-goat".'],
- ['Rigel',5.2423,-8.202,0.13,'A blue supergiant marking one corner of Orion. It shines tens of thousands of times brighter than our Sun — it only looks modest because it is roughly 860 light-years away.'],
- ['Procyon',7.6550,5.225,0.34,'The "little dog star", a close neighbour at 11 light-years. Its name means "before the dog" — from most places it rises just ahead of Sirius, the Dog Star.'],
- ['Achernar',1.6286,-57.237,0.46,'Marks the end of Eridanus, the river of stars. It spins so fast — a full turn in about two days — that it bulges into one of the most squashed stars known.'],
- ['Betelgeuse',5.9195,7.407,0.50,'A red supergiant shoulder of Orion, and visibly orange-red to the naked eye. It is nearing the end of its life and will one day explode as a supernova bright enough to see in daylight.'],
- ['Hadar',14.0637,-60.373,0.61,'One of the two "Pointer" stars. Draw a line through Hadar and Alpha Centauri and it points you straight at the Southern Cross — the classic southern way to get your bearings.'],
- ['Altair',19.8464,8.868,0.77,'A near neighbour at 17 light-years, spinning so fast it completes a rotation in under ten hours — a day on Altair is shorter than a night shift.'],
- ['Acrux',12.4433,-63.099,0.76,'The brightest star of the Southern Cross, at the foot of the constellation on the flags of Australia, New Zealand and others. Actually several blue-hot stars in one.'],
- ['Mimosa',12.7953,-59.689,1.25,'The second-brightest star of the Southern Cross, on the crossbar. A hot blue giant hundreds of light-years away.'],
- ['Aldebaran',4.5987,16.509,0.86,'The glinting orange "eye" of Taurus the bull. It sits in front of a V-shaped cluster of fainter stars, but is actually much closer to us than they are.'],
- ['Antares',16.4901,-26.432,1.06,'Its name means "rival of Mars", because it glows a similar rusty red. It is a supergiant so vast that, put where our Sun is, it would swallow Mars’ orbit.'],
- ['Spica',13.4199,-11.161,0.97,'The brightest star of Virgo — really two blue-hot stars whirling around each other every four days, so close together they are stretched out of shape.'],
- ['Pollux',7.7553,28.026,1.14,'An orange giant, one of the heavenly twins with nearby Castor. It was one of the first bright stars found to have a planet of its own.'],
- ['Fomalhaut',22.9608,-29.622,1.16,'Often called the loneliest bright star — it sits in a dull patch of sky with nothing nearby to rival it. It is ringed by a huge band of dust where planets are forming.'],
- ['Deneb',20.6905,45.280,1.25,'One of the most luminous stars you can see with the naked eye — around 2,600 light-years away, yet still bright. The light reaching you tonight left it before Rome was founded.'],
- ['Regulus',10.1395,11.967,1.36,'The "little king", marking the heart of Leo the lion. It spins so fast it is squashed like a mandarin, and would fly apart if it turned much quicker.'],
+ ['Sirius',6.7525,-16.716,-1.46,'#eef2ff','The brightest star in the whole night sky, and one of our nearest neighbours — its light takes just 8.6 years to reach you. When it sits low it often twinkles wildly, flashing blue, white and red as our atmosphere shakes its light about.'],
+ ['Canopus',6.3992,-52.696,-0.74,'#f4eedd','The second-brightest star in the sky and a southern-hemisphere treasure. Sailors steered by it for centuries — and spacecraft still use it today to work out which way they are pointing.'],
+ ['Alpha Centauri',14.6599,-60.834,-0.27,'#ffe9c4','The closest star system to our Sun, only 4.4 light-years away. What looks like a single bright point is really two suns circling each other, with a faint third — Proxima — tagging along.'],
+ ['Arcturus',14.2610,19.182,-0.05,'#ffc98e','An orange giant star, noticeably warm-coloured if you look carefully. The light landing in your eye right now left Arcturus about 37 years ago.'],
+ ['Vega',18.6156,38.784,0.03,'#d6e3ff','A crisp blue-white star and one of the most studied in the sky — it was the first star ever photographed, back in 1850. In about 12,000 years it will take a turn as our pole star.'],
+ ['Capella',5.2782,45.998,0.08,'#ffe3a8','Looks like one golden star, but it is actually two pairs of stars — four suns in all — packed into one point of light. Its name means "the little she-goat".'],
+ ['Rigel',5.2423,-8.202,0.13,'#cdddff','A blue supergiant marking one corner of Orion. It shines tens of thousands of times brighter than our Sun — it only looks modest because it is roughly 860 light-years away.'],
+ ['Procyon',7.6550,5.225,0.34,'#f6efdc','The "little dog star", a close neighbour at 11 light-years. Its name means "before the dog" — from most places it rises just ahead of Sirius, the Dog Star.'],
+ ['Achernar',1.6286,-57.237,0.46,'#cdddff','Marks the end of Eridanus, the river of stars. It spins so fast — a full turn in about two days — that it bulges into one of the most squashed stars known.'],
+ ['Betelgeuse',5.9195,7.407,0.50,'#ff9e6b','A red supergiant shoulder of Orion, and visibly orange-red to the naked eye. It is nearing the end of its life and will one day explode as a supernova bright enough to see in daylight.'],
+ ['Hadar',14.0637,-60.373,0.61,'#cdddff','One of the two "Pointer" stars. Draw a line through Hadar and Alpha Centauri and it points you straight at the Southern Cross — the classic southern way to get your bearings.'],
+ ['Altair',19.8464,8.868,0.77,'#eef2ff','A near neighbour at 17 light-years, spinning so fast it completes a rotation in under ten hours — a day on Altair is shorter than a night shift.'],
+ ['Acrux',12.4433,-63.099,0.76,'#cdddff','The brightest star of the Southern Cross, at the foot of the constellation on the flags of Australia, New Zealand and others. Actually several blue-hot stars in one.'],
+ ['Mimosa',12.7953,-59.689,1.25,'#cdddff','The second-brightest star of the Southern Cross, on the crossbar. A hot blue giant hundreds of light-years away.'],
+ ['Aldebaran',4.5987,16.509,0.86,'#ffbd85','The glinting orange "eye" of Taurus the bull. It sits in front of a V-shaped cluster of fainter stars, but is actually much closer to us than they are.'],
+ ['Antares',16.4901,-26.432,1.06,'#ff9066','Its name means "rival of Mars", because it glows a similar rusty red. It is a supergiant so vast that, put where our Sun is, it would swallow Mars’ orbit.'],
+ ['Spica',13.4199,-11.161,0.97,'#cdddff','The brightest star of Virgo — really two blue-hot stars whirling around each other every four days, so close together they are stretched out of shape.'],
+ ['Pollux',7.7553,28.026,1.14,'#ffc98e','An orange giant, one of the heavenly twins with nearby Castor. It was one of the first bright stars found to have a planet of its own.'],
+ ['Fomalhaut',22.9608,-29.622,1.16,'#eef2ff','Often called the loneliest bright star — it sits in a dull patch of sky with nothing nearby to rival it. It is ringed by a huge band of dust where planets are forming.'],
+ ['Deneb',20.6905,45.280,1.25,'#e8eeff','One of the most luminous stars you can see with the naked eye — around 2,600 light-years away, yet still bright. The light reaching you tonight left it before Rome was founded.'],
+ ['Regulus',10.1395,11.967,1.36,'#d6e3ff','The "little king", marking the heart of Leo the lion. It spins so fast it is squashed like a mandarin, and would fly apart if it turned much quicker.'],
 ];
+const PLANET_COLOR={mercury:'#cfc4b4',venus:'#fff2cf',mars:'#ff8e5f',jupiter:'#f2e2ba',saturn:'#eed69a'};
 
 /* ---------- plain-language blurbs for solar-system objects ---------- */
 const BODY_INFO={
@@ -367,10 +415,10 @@ function computeSky(date,lat,lng){
 
   for(const key of Object.keys(PLANET_EL)){
     const p=planetCalc(key,d,sun);
-    objs.push({id:key,name:BODY_INFO[key].name,type:'planet',mag:p.mag,...altAz(p.ra,p.dec,lst,lat)});
+    objs.push({id:key,name:BODY_INFO[key].name,type:'planet',mag:p.mag,color:PLANET_COLOR[key],...altAz(p.ra,p.dec,lst,lat)});
   }
   for(const s of STARS){
-    objs.push({id:'star:'+s[0],name:s[0],type:'star',mag:s[3],blurb:s[4],...altAz(s[1]*15,s[2],lst,lat)});
+    objs.push({id:'star:'+s[0],name:s[0],type:'star',mag:s[3],color:s[4],blurb:s[5],...altAz(s[1]*15,s[2],lst,lat)});
   }
   return {objs,sunAlt:sunAA.alt};
 }
@@ -409,6 +457,34 @@ function darkness(sunAlt){
   return {code:'dark', msg:'The sky is properly dark. Good looking-up conditions — here’s what’s out there.'};
 }
 
+/* ---------- rise & set (sampled crossing search, next 24 h) ---------- */
+function altOfId(id,date,lat,lng){
+  const d=dayNum(date), ut=((date.getTime()/86400000)%1+1)%1*24;
+  const sun=sunCalc(d), lst=rev(rev(sun.Ls+180)+ut*15+lng);
+  if(id==='sun')return altAz(sun.ra,sun.dec,lst,lat).alt;
+  if(id==='moon'){
+    const m=moonCalc(d,sun), aa=altAz(m.ra,m.dec,lst,lat);
+    return aa.alt-asind(1/m.r)*cosd(aa.alt);
+  }
+  if(PLANET_EL[id]){const p=planetCalc(id,d,sun);return altAz(p.ra,p.dec,lst,lat).alt;}
+  const s=STARS.find(s=>'star:'+s[0]===id);
+  return s?altAz(s[1]*15,s[2],lst,lat).alt:-90;
+}
+/* next time `id` crosses `threshold` degrees, rising or setting */
+function nextCross(id,from,threshold,rising,lat,lng){
+  let prev=altOfId(id,from,lat,lng)-threshold;
+  for(let m=6;m<=1446;m+=6){
+    const t=new Date(from.getTime()+m*60000);
+    const a=altOfId(id,t,lat,lng)-threshold;
+    if(rising?(prev<=0&&a>0):(prev>=0&&a<0)){
+      const f=prev/(prev-a);
+      return new Date(from.getTime()+((m-6)+6*f)*60000);
+    }
+    prev=a;
+  }
+  return null;
+}
+
 /* ================================================================
    state + storage
    ================================================================ */
@@ -422,7 +498,8 @@ let state={
   mode:load('sky.mode','dome'),
   nv:load('sky.nv',false),
 };
-let sky=null, hitZones=[];
+let spotted=load('sky.spotted',{});
+let sky=null, hitZones=[], labelQueue=[];
 
 function effDate(){return new Date(Date.now()+state.offset*60000);}
 
@@ -455,10 +532,36 @@ function renderStatus(){
   const open=()=>$('locOv').classList.add('show');
   $('locLink').onclick=open;
   const l2=$('locLink2'); if(l2)l2.onclick=open;
+  renderSunTimes(dk);
+}
+
+/* sunset / first-dark / sunrise line under the status */
+function renderSunTimes(dk){
+  const {lat,lng}=state.loc, from=effDate(), parts=[];
+  if(dk.code==='day'){
+    const set=nextCross('sun',from,0,false,lat,lng);
+    const dark=nextCross('sun',from,-12,false,lat,lng);
+    if(set)parts.push('Sunset '+fmtWhen(set,from));
+    if(dark)parts.push('properly dark by '+fmtWhen(dark,from));
+  }else if(dk.code==='civil'||dk.code==='naut'){
+    const dark=nextCross('sun',from,-12,false,lat,lng);
+    if(dark)parts.push('Properly dark by '+fmtWhen(dark,from));
+    else parts.push('It never gets fully dark at this time of year here');
+  }else{
+    const dawn=nextCross('sun',from,-12,true,lat,lng);
+    const rise=nextCross('sun',from,0,true,lat,lng);
+    if(dawn)parts.push('First light '+fmtWhen(dawn,from));
+    if(rise)parts.push('sunrise '+fmtWhen(rise,from));
+  }
+  $('suntimes').innerHTML=parts.length?'&#9728;&#65038; '+esc(parts.join(' · ')):'';
+  $('suntimes').style.display=parts.length?'':'none';
 }
 
 function fmtTime(d){
   return d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+}
+function fmtWhen(d,from){
+  return fmtTime(d)+(d.getDate()!==from.getDate()?' tomorrow':'');
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
@@ -467,14 +570,26 @@ function visibleObjs(){
   return sky.objs.filter(o=>o.alt>0.25).sort((a,b)=>a.mag-b.mag);
 }
 
+const TIPS=[
+ 'A steady light is usually a planet — stars twinkle, planets mostly don’t.',
+ 'Your eyes take about ten minutes to fully adjust to the dark. Night-vision mode keeps them that way.',
+ 'Hold a fist at arm’s length — top to bottom it covers about 10° of sky. Three fists up from the horizon is 30°.',
+ 'The Moon and planets all travel the same road across the sky, which is why bright things often seem to line up.',
+ 'City lights wash out the faint stars, but the Moon and bright planets punch straight through.',
+ 'To see a faint star, look slightly to one side of it — the edge of your eye is better in the dark than the centre.',
+ 'The whole sky slides slowly westward through the night — new things rise in the east every hour.',
+ 'Scrub the time slider before you head out, and you’ll know what’s waiting.',
+];
+
 function renderList(){
   const vis=visibleObjs().filter(o=>o.type!=='sun');
   const dk=darkness(sky.sunAlt);
-  $('listSub').textContent='Brightest first · tap anything for the story';
+  const nSpot=Object.keys(spotted).length;
+  $('listSub').textContent='Brightest first · tap anything for the story'+
+    (nSpot?' · '+nSpot+' spotted so far':'');
   const box=$('list'); box.innerHTML='';
   if(!vis.length){
     box.innerHTML='<div class="card empty">Nothing bright is above the horizon right now — which is unusual. Try scrubbing the time slider forward a few hours.</div>';
-    return;
   }
   for(const o of vis){
     const daylight=(dk.code==='day'||dk.code==='civil') && o.mag>-3 && o.type!=='moon';
@@ -483,22 +598,29 @@ function renderList(){
     const sub=daylight?'Up now, but hidden by daylight — '+compassWord(o.az):whereSentence(o).replace(/^Look /,'').replace(/\.$/,'');
     const extra=o.type==='moon'?' · '+phaseName(o.age)+', '+Math.round(o.frac*100)+'% lit':'';
     b.innerHTML='<span class="dot"><canvas width="34" height="34"></canvas></span>'+
-      '<span class="txt"><span class="nm">'+esc(o.name)+'</span>'+
+      '<span class="txt"><span class="nm">'+esc(o.name)+(spotted[o.id]?'<span class="tick">&#10003;</span>':'')+'</span>'+
       '<span class="dir" style="display:block">'+esc(cap(sub)+extra)+'</span></span>'+
       '<span class="nums">'+compassAb(o.az)+' '+Math.round(o.az)+'°<br>'+Math.round(o.alt)+'° up</span>';
     b.onclick=()=>showCard(o);
     box.appendChild(b);
     drawListDot(b.querySelector('canvas'),o);
   }
+  $('tipCard').innerHTML='<b>WHILE YOU’RE OUT THERE</b><br>'+esc(TIPS[Math.floor(Date.now()/120000)%TIPS.length]);
 }
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+/* colour for an object dot — per-body tints, all-red in night vision */
+function objColor(o,P){
+  if(state.nv)return o.type==='star'?P.star:P.accent;
+  return o.color||(o.type==='star'?P.star:P.accent);
+}
 
 function drawListDot(cv,o){
   const ctx=cv.getContext('2d'),P=pal(),c=17;
   ctx.clearRect(0,0,34,34);
   if(o.type==='moon'){drawMoonGlyph(ctx,c,c,11,o.frac,o.age<180,state.loc.lat<0);return;}
   const r=Math.max(3,Math.min(10,8-o.mag*1.6));
-  const col=o.type==='star'?P.star:P.accent;
+  const col=objColor(o,P);
   const g=ctx.createRadialGradient(c,c,0,c,c,r*1.9);
   g.addColorStop(0,col);g.addColorStop(1,'transparent');
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(c,c,r*1.9,0,7);ctx.fill();
@@ -522,24 +644,29 @@ function drawMoonGlyph(ctx,x,y,R,frac,waxing,south){
 }
 
 /* ---------- chart ---------- */
-function renderChart(){
+function renderChart(tw){
   if(!sky)return;
   const cv=$('chart'), dpr=window.devicePixelRatio||1;
   const w=cv.clientWidth||cv.parentElement.clientWidth-32;
   const h=state.mode==='dome'?Math.min(w,420):230;
-  cv.style.height=h+'px';
-  cv.width=w*dpr; cv.height=h*dpr;
-  const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
-  hitZones=[];
-  if(state.mode==='dome')drawDome(ctx,w,h); else drawStrip(ctx,w,h);
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){
+    cv.style.height=h+'px';
+    cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  }
+  const ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  hitZones=[];labelQueue=[];
+  if(state.mode==='dome')drawDome(ctx,w,h,tw||0); else drawStrip(ctx,w,h,tw||0);
 }
 
-function drawDome(ctx,w,h){
+function drawDome(ctx,w,h,tw){
   const P=pal(), cx=w/2, cy=h/2, R=Math.min(w,h)/2-26;
   ctx.clearRect(0,0,w,h);
   const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R);
   g.addColorStop(0,P.panel);g.addColorStop(1,P.bg);
+  ctx.globalAlpha=state.nv?1:.88;
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
+  ctx.globalAlpha=1;
   ctx.strokeStyle=P.line;ctx.lineWidth=1.5;
   ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();
   ctx.setLineDash([3,5]);ctx.lineWidth=1;
@@ -561,14 +688,17 @@ function drawDome(ctx,w,h){
   };
   for(const o of sky.objs.filter(o=>o.alt>0).sort((a,b)=>b.mag-a.mag)){
     const {x,y}=pos(o);
-    drawObj(ctx,x,y,o,P);
+    drawObj(ctx,x,y,o,P,tw);
   }
+  placeLabels(ctx,P);
 }
 
-function drawStrip(ctx,w,h){
+function drawStrip(ctx,w,h,tw){
   const P=pal(), padL=8,padR=8, y0=h-30, yTop=16;
   ctx.clearRect(0,0,w,h);
+  ctx.globalAlpha=state.nv?1:.72;
   ctx.fillStyle=P.panel;ctx.fillRect(0,0,w,h);
+  ctx.globalAlpha=1;
   const X=az=>padL+(az/360)*(w-padL-padR);
   const Y=alt=>y0-(alt/90)*(y0-yTop);
   ctx.setLineDash([3,5]);ctx.strokeStyle=P.line;ctx.lineWidth=1;
@@ -585,35 +715,57 @@ function drawStrip(ctx,w,h){
   const marks=['N','NE','E','SE','S','SW','W','NW','N'];
   for(let i=0;i<9;i++){ctx.fillText(marks[i],X(i*45),y0+6);}
   for(const o of sky.objs.filter(o=>o.alt>0).sort((a,b)=>b.mag-a.mag)){
-    drawObj(ctx,X(o.az),Y(o.alt),o,P);
+    drawObj(ctx,X(o.az),Y(o.alt),o,P,tw);
   }
+  placeLabels(ctx,P);
 }
 
-function drawObj(ctx,x,y,o,P){
+/* stable per-star twinkle phase */
+function twPhase(name){let n=0;for(const c of name)n+=c.charCodeAt(0);return n%13;}
+
+function drawObj(ctx,x,y,o,P,tw){
   if(o.type==='sun'){
     const g=ctx.createRadialGradient(x,y,0,x,y,20);
     g.addColorStop(0,P.accent);g.addColorStop(1,'transparent');
     ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,20,0,7);ctx.fill();
     ctx.fillStyle=P.accent;ctx.beginPath();ctx.arc(x,y,7,0,7);ctx.fill();
-    label(ctx,x,y,'Sun',P,10);
+    labelQueue.push({x,y,txt:'Sun',off:10,mag:o.mag});
   }else if(o.type==='moon'){
     drawMoonGlyph(ctx,x,y,8,o.frac,o.age<180,state.loc.lat<0);
-    label(ctx,x,y,'Moon',P,11);
+    labelQueue.push({x,y,txt:'Moon',off:11,mag:o.mag});
   }else{
     const r=Math.max(2,Math.min(7,5.5-o.mag*1.1));
-    const col=o.type==='star'?P.star:P.accent;
+    const col=objColor(o,P);
+    /* only stars twinkle — planets shine steady, just like the real sky */
+    if(o.type==='star'&&tw)ctx.globalAlpha=.72+.28*Math.sin(tw/430+twPhase(o.name));
     const g=ctx.createRadialGradient(x,y,0,x,y,r*2.2);
     g.addColorStop(0,col);g.addColorStop(1,'transparent');
     ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r*2.2,0,7);ctx.fill();
     ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
-    if(o.type==='planet'||o.mag<0.9)label(ctx,x,y,o.name,P,r+3);
+    ctx.globalAlpha=1;
+    if(o.type==='planet'||o.mag<0.9)labelQueue.push({x,y,txt:o.name,off:r+3,mag:o.mag});
   }
   hitZones.push({x,y,o});
 }
-function label(ctx,x,y,txt,P,off){
-  ctx.fillStyle=P.dim;ctx.font='10.5px -apple-system,system-ui,sans-serif';
+
+/* place labels brightest-first, skipping any that would collide */
+function placeLabels(ctx,P){
+  labelQueue.sort((a,b)=>a.mag-b.mag);
+  const rects=[];
+  ctx.font='10.5px -apple-system,system-ui,sans-serif';
   ctx.textAlign='center';ctx.textBaseline='top';
-  ctx.fillText(txt,x,y+off+2);
+  for(const L of labelQueue){
+    const w=ctx.measureText(L.txt).width;
+    for(const ly of[L.y+L.off+2, L.y-L.off-14]){
+      const r={x:L.x-w/2-3,y:ly-2,w:w+6,h:14};
+      const clash=rects.some(o=>r.x<o.x+o.w&&o.x<r.x+r.w&&r.y<o.y+o.h&&o.y<r.y+r.h);
+      if(!clash){
+        rects.push(r);
+        ctx.fillStyle=P.dim;ctx.fillText(L.txt,L.x,ly);
+        break;
+      }
+    }
+  }
 }
 
 /* chart tap → nearest object */
@@ -639,16 +791,46 @@ function showCard(o){
   }
   const below=o.alt<=0.25;
   const where=below?'Below the horizon right now — not visible.':whereSentence(o);
+  /* when does it rise or set? */
+  let rise='';
+  if(o.type!=='sun'){
+    const {lat,lng}=state.loc, from=effDate();
+    if(below){
+      const t=nextCross(o.id,from,0,true,lat,lng);
+      rise=t?'Rises about '+fmtWhen(t,from)+'.':'Stays below the horizon from your latitude.';
+    }else{
+      const t=nextCross(o.id,from,0,false,lat,lng);
+      rise=t?'Sets about '+fmtWhen(t,from)+'.':'Never sets from here — it circles the pole all night.';
+    }
+  }
+  const canSpot=o.type!=='sun';
   $('cardSheet').innerHTML=
     '<h3>'+esc(info.name)+'</h3><div class="kind">'+esc(info.kind)+'</div>'+
-    '<p class="where">'+esc(where)+'</p>'+extra+
+    '<p class="where">'+esc(where)+'</p>'+
+    (rise?'<p class="rise">'+esc(rise)+'</p>':'')+extra+
     '<p class="blurb">'+esc(info.blurb)+'</p>'+
     '<div class="statline">'+
       '<div>Direction<b>'+compassAb(o.az)+' · '+Math.round(o.az)+'°</b></div>'+
       '<div>Height<b>'+Math.round(o.alt)+'° above horizon</b></div>'+
       (o.type!=='sun'?'<div>Brightness<b>mag '+o.mag.toFixed(1)+'</b></div>':'')+
     '</div>'+
+    (canSpot?'<button class="spot" id="spotBtn"></button>':'')+
     '<button class="close" onclick="document.getElementById(\'cardOv\').classList.remove(\'show\')">Close</button>';
+  if(canSpot){
+    const btn=$('spotBtn');
+    const paint=()=>{
+      const done=!!spotted[o.id];
+      btn.className='spot'+(done?' done':'');
+      btn.innerHTML=done?'&#10003;&nbsp; Spotted — tap to unmark':'I spotted it';
+    };
+    btn.onclick=()=>{
+      if(spotted[o.id])delete spotted[o.id];
+      else spotted[o.id]=new Date().toISOString().slice(0,10);
+      save('sky.spotted',spotted);
+      paint();renderList();
+    };
+    paint();
+  }
   $('cardOv').classList.add('show');
 }
 $('cardOv').addEventListener('click',e=>{if(e.target.id==='cardOv')$('cardOv').classList.remove('show');});
@@ -719,7 +901,15 @@ setMode(state.mode);
 
 /* keep it live — redraw each minute when showing "now" */
 setInterval(()=>{if(state.offset===0)renderAll();},60000);
-window.addEventListener('resize',renderChart);
+window.addEventListener('resize',()=>renderChart());
+
+/* gentle star twinkle, ~7 fps, paused while the tab is hidden */
+let lastTw=0;
+function twinkleLoop(t){
+  if(!document.hidden && sky && t-lastTw>140){lastTw=t;renderChart(t);}
+  requestAnimationFrame(twinkleLoop);
+}
+requestAnimationFrame(twinkleLoop);
 
 /* first visit with the default location → offer the location sheet */
 if(state.loc.isDefault && !load('sky.locAsked',false)){
