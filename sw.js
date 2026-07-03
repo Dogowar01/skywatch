@@ -1,5 +1,5 @@
 /* Sky — service worker. Bump CACHE version on every deploy (Oracle pattern). */
-const CACHE = 'sky-v1.2.0';
+const CACHE = 'sky-v1.3.0';
 const ASSETS = [
   './',
   './index.html',

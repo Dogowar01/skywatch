@@ -24,6 +24,11 @@ beginner-friendly horizon strip. Tap anything for a short, friendly story.
 - Stars drawn in their real colours (orange Betelgeuse, blue-white Rigel) and
   gently twinkling — planets shine steady, just like the real sky
 - A lightweight **"I spotted it"** log — tick off what you've found
+- **GPS auto-locate** — finds you on first open and quietly refreshes each
+  time the app opens (optional, off-switch in settings); manual entry and
+  city presets as fallback
+- **Settings panel** — location controls, auto-GPS toggle, night vision,
+  spotted-log reset
 - Red **night-vision mode** for use in the dark (swaps the photo backdrop for
   pure low-glare red)
 - Knows whether it's actually dark enough to see anything, and says so

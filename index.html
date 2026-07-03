@@ -158,6 +158,21 @@ h2{font-size:1.15rem;margin:22px 2px 4px;font-weight:600}
 .manual input[name=nm]{grid-column:1/3}
 .manual button{grid-column:1/3;color:var(--accent)}
 .note{font-size:.78rem;color:var(--faint);line-height:1.5;margin-top:10px}
+/* settings */
+.setrow{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 2px;border-bottom:1px solid var(--line);min-height:46px;
+}
+.setrow:last-of-type{border-bottom:none}
+.setrow .lbl{font-size:.92rem}
+.setrow .lbl small{display:block;color:var(--faint);font-size:.75rem;margin-top:2px;line-height:1.4}
+.setrow input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:0 0 auto}
+.setrow button{font-size:.85rem;padding:7px 12px;min-height:36px;flex:0 0 auto}
+.sethead{
+  color:var(--faint);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;
+  margin:18px 0 2px;
+}
+.about{font-size:.78rem;color:var(--faint);line-height:1.6;margin-top:14px}
 #suntimes{font-size:.83rem;color:var(--dim);margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
 .tip{
   font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
@@ -176,6 +191,7 @@ footer{margin-top:34px;text-align:center;color:var(--faint);font-size:.72rem;let
     <h1>Sky</h1><span class="tag">Signal9</span>
     <span class="spacer"></span>
     <button id="nvBtn" class="chip" title="Red night-vision mode">Night&nbsp;vision</button>
+    <button id="setBtn" class="chip" title="Settings" aria-label="Settings">&#9881;&#65038;</button>
   </header>
   <p class="tagline">what’s that bright thing tonight?</p>
 
@@ -232,6 +248,45 @@ footer{margin-top:34px;text-align:center;color:var(--faint);font-size:.72rem;let
     </div>
     <p class="note">South of the equator latitude is negative; east of Greenwich longitude is positive. A rough guess within a degree or so is plenty.</p>
     <button class="close" id="locClose">Close</button>
+  </div>
+</div>
+
+<!-- settings sheet -->
+<div class="overlay" id="setOv">
+  <div class="sheet">
+    <h3>Settings</h3>
+    <div class="kind">Everything stays on your phone</div>
+
+    <div class="sethead">Location</div>
+    <div class="setrow">
+      <span class="lbl" id="setLocName"></span>
+      <button id="setGps">&#9673; Find me</button>
+    </div>
+    <div class="setrow">
+      <span class="lbl">Update from GPS each time Sky opens
+        <small>Only while the app is open — Sky never tracks you.</small></span>
+      <input type="checkbox" id="setAuto">
+    </div>
+    <div class="setrow">
+      <span class="lbl">Somewhere else, or no GPS?</span>
+      <button id="setManual">Pick a place</button>
+    </div>
+
+    <div class="sethead">Display</div>
+    <div class="setrow">
+      <span class="lbl">Red night-vision mode
+        <small>Low-glare red that keeps your eyes adjusted to the dark.</small></span>
+      <input type="checkbox" id="setNv">
+    </div>
+
+    <div class="sethead">Spotted log</div>
+    <div class="setrow">
+      <span class="lbl" id="setSpotCount"></span>
+      <button id="setClearSpot">Clear</button>
+    </div>
+
+    <p class="about" id="setAbout"></p>
+    <button class="close" id="setClose">Close</button>
   </div>
 </div>
 
@@ -492,11 +547,13 @@ const $=id=>document.getElementById(id);
 function load(k,f){try{const v=localStorage.getItem(k);return v===null?f:JSON.parse(v);}catch(e){return f;}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 
+const APP_VER='1.3.0';
 let state={
   loc:load('sky.loc',{lat:-42.882,lng:147.327,name:'Hobart',isDefault:true}),
   offset:0,                                  // minutes from now
   mode:load('sky.mode','dome'),
   nv:load('sky.nv',false),
+  autogps:load('sky.autogps',true),
 };
 let spotted=load('sky.spotted',{});
 let sky=null, hitZones=[], labelQueue=[];
@@ -941,12 +998,14 @@ $('nowBtn').onclick=()=>{
   state.offset=0;$('timeSlider').value=0;$('timeLabel').textContent='now';renderAll();
 };
 
-$('nvBtn').onclick=()=>{
-  state.nv=!state.nv;save('sky.nv',state.nv);
-  document.body.classList.toggle('nv',state.nv);
-  $('nvBtn').classList.toggle('on',state.nv);
+function setNightVision(on){
+  state.nv=on;save('sky.nv',on);
+  document.body.classList.toggle('nv',on);
+  $('nvBtn').classList.toggle('on',on);
+  $('setNv').checked=on;
   renderAll();
-};
+}
+$('nvBtn').onclick=()=>setNightVision(!state.nv);
 
 /* ---------- location ---------- */
 function setLoc(lat,lng,name){
@@ -955,16 +1014,27 @@ function setLoc(lat,lng,name){
   $('locOv').classList.remove('show');
   renderAll();
 }
-$('geoBtn').onclick=()=>{
-  if(!navigator.geolocation){alert('Location isn’t available on this device — pick a place below instead.');return;}
-  $('geoBtn').textContent='Finding you…';
+/* one GPS routine shared by the location sheet, settings, and boot */
+function doGps(btn,idleHtml,onFail){
+  if(!navigator.geolocation){
+    if(onFail)onFail();else alert('Location isn’t available on this device — pick a place instead.');
+    return;
+  }
+  if(btn)btn.textContent='Finding you…';
   navigator.geolocation.getCurrentPosition(
-    p=>{ $('geoBtn').textContent='◉  Use my location';
-         setLoc(+p.coords.latitude.toFixed(3),+p.coords.longitude.toFixed(3),'Your location'); },
-    ()=>{ $('geoBtn').textContent='◉  Use my location';
-          alert('Couldn’t get your location — no problem, pick a place or type rough coordinates below.'); },
+    p=>{
+      if(btn)btn.innerHTML=idleHtml;
+      setLoc(+p.coords.latitude.toFixed(3),+p.coords.longitude.toFixed(3),'My location');
+      renderSettings();
+    },
+    ()=>{
+      if(btn)btn.innerHTML=idleHtml;
+      if(onFail)onFail();
+      else alert('Couldn’t get your location — no problem, pick a place or type rough coordinates instead.');
+    },
     {timeout:9000,maximumAge:600000});
-};
+}
+$('geoBtn').onclick=()=>doGps($('geoBtn'),'&#9673;&nbsp; Use my location');
 document.querySelectorAll('[data-loc]').forEach(b=>{
   b.onclick=()=>{const[la,ln,nm]=b.dataset.loc.split(',');setLoc(+la,+ln,nm);};
 });
@@ -974,6 +1044,30 @@ $('mSave').onclick=()=>{
   setLoc(la,ln,$('mNm').value.trim()||la.toFixed(1)+'°, '+ln.toFixed(1)+'°');
 };
 $('locClose').onclick=()=>$('locOv').classList.remove('show');
+
+/* ---------- settings ---------- */
+function renderSettings(){
+  const l=state.loc;
+  $('setLocName').innerHTML=esc(l.name||'Unnamed')+
+    '<small>'+l.lat.toFixed(3)+'°, '+l.lng.toFixed(3)+'°'+(l.isDefault?' — default, not yours yet':'')+'</small>';
+  $('setAuto').checked=state.autogps;
+  $('setNv').checked=state.nv;
+  const n=Object.keys(spotted).length;
+  $('setSpotCount').textContent=n===0?'Nothing ticked off yet':(n+' object'+(n>1?'s':'')+' spotted');
+  $('setAbout').innerHTML='Sky v'+APP_VER+' · Signal9<br>All astronomy is computed on your phone. No accounts, no tracking, nothing leaves the device. Works fully offline once loaded.';
+}
+$('setBtn').onclick=()=>{renderSettings();$('setOv').classList.add('show');};
+$('setClose').onclick=()=>$('setOv').classList.remove('show');
+$('setOv').addEventListener('click',e=>{if(e.target.id==='setOv')$('setOv').classList.remove('show');});
+$('setGps').onclick=()=>doGps($('setGps'),'&#9673; Find me');
+$('setManual').onclick=()=>{$('setOv').classList.remove('show');$('locOv').classList.add('show');};
+$('setAuto').onchange=e=>{state.autogps=e.target.checked;save('sky.autogps',state.autogps);};
+$('setNv').onchange=e=>setNightVision(e.target.checked);
+$('setClearSpot').onclick=()=>{
+  if(Object.keys(spotted).length && !confirm('Clear your whole spotted log?'))return;
+  spotted={};save('sky.spotted',spotted);
+  renderSettings();renderList();
+};
 
 /* ================================================================
    boot
@@ -994,11 +1088,22 @@ function twinkleLoop(t){
 }
 requestAnimationFrame(twinkleLoop);
 
-/* first visit with the default location → offer the location sheet */
-if(state.loc.isDefault && !load('sky.locAsked',false)){
-  save('sky.locAsked',true);
-  setTimeout(()=>$('locOv').classList.add('show'),700);
+/* GPS auto-locate: silent refresh when permission is already granted;
+   on first run, ask outright — fall back to the location sheet if it fails */
+function firstRunSheet(){
+  if(state.loc.isDefault && !load('sky.locAsked',false)){
+    save('sky.locAsked',true);
+    setTimeout(()=>$('locOv').classList.add('show'),500);
+  }
 }
+(async function autoLocate(){
+  if(!navigator.geolocation||!state.autogps)return firstRunSheet();
+  let perm='prompt';
+  try{perm=(await navigator.permissions.query({name:'geolocation'})).state;}catch(e){}
+  if(perm==='denied')return firstRunSheet();
+  if(perm==='granted'||state.loc.isDefault)doGps(null,'',firstRunSheet);
+  else firstRunSheet();
+})();
 
 /* service worker */
 if('serviceWorker' in navigator && location.protocol==='https:'){
