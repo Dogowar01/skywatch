@@ -500,6 +500,9 @@ let state={
 };
 let spotted=load('sky.spotted',{});
 let sky=null, hitZones=[], labelQueue=[];
+/* 3-D dome camera: az = which way you're facing, tilt = viewing angle.
+   Tilt stays under 45° so every above-horizon point projects clear of the ground disc. */
+let view={az:0,tilt:28,drag:null,moved:false};
 
 function effDate(){return new Date(Date.now()+state.offset*60000);}
 
@@ -659,38 +662,89 @@ function renderChart(tw){
   if(state.mode==='dome')drawDome(ctx,w,h,tw||0); else drawStrip(ctx,w,h,tw||0);
 }
 
-function drawDome(ctx,w,h,tw){
-  const P=pal(), cx=w/2, cy=h/2, R=Math.min(w,h)/2-26;
-  ctx.clearRect(0,0,w,h);
-  const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R);
-  g.addColorStop(0,P.panel);g.addColorStop(1,P.bg);
-  ctx.globalAlpha=state.nv?1:.88;
-  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
-  ctx.globalAlpha=1;
-  ctx.strokeStyle=P.line;ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();
-  ctx.setLineDash([3,5]);ctx.lineWidth=1;
-  for(const a of[30,60]){ctx.beginPath();ctx.arc(cx,cy,R*(90-a)/90,0,7);ctx.stroke();}
-  ctx.setLineDash([]);
-  ctx.beginPath();ctx.moveTo(cx-R,cy);ctx.lineTo(cx+R,cy);ctx.moveTo(cx,cy-R);ctx.lineTo(cx,cy+R);
-  ctx.strokeStyle=P.line;ctx.globalAlpha=.5;ctx.stroke();ctx.globalAlpha=1;
-  ctx.fillStyle=P.dim;ctx.font='600 13px -apple-system,system-ui,sans-serif';
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText('N',cx,cy-R-13);ctx.fillText('S',cx,cy+R+13);
-  ctx.fillText('E',cx+R+13,cy);ctx.fillText('W',cx-R-13,cy);
-  ctx.fillStyle=P.faint;ctx.font='10px -apple-system,system-ui,sans-serif';
-  ctx.fillText('horizon = edge · straight up = centre',cx,h-8);
+/* orthographic projection onto the tilted dome.
+   X = east, Y = north, Z = up; camera faces view.az, elevated view.tilt°.
+   near ∈ [-1,1]: +1 = closest side of the dome to you. */
+function project3D(alt,az,cx,cy,R,sb,cb){
+  const rel=az-view.az;
+  const X=cosd(alt)*sind(rel), Y=cosd(alt)*cosd(rel), Z=sind(alt);
+  return {x:cx+R*X, y:cy-R*(Y*sb+Z*cb), near:-Y};
+}
 
-  // objects: azimuth = angle (N up, E right), altitude = distance from centre
-  const pos=o=>{
-    const d=R*(90-o.alt)/90;
-    return {x:cx+d*sind(o.az), y:cy-d*cosd(o.az)};
-  };
+function drawDome(ctx,w,h,tw){
+  const P=pal();
+  const sb=sind(view.tilt), cb=cosd(view.tilt);
+  const R=Math.min((w-56)/2,(h-52)/(1+sb));
+  const cx=w/2, cy=24+R;
+  ctx.clearRect(0,0,w,h);
+
+  // dome shell: semicircular arch over the horizon ellipse
+  ctx.beginPath();
+  ctx.arc(cx,cy,R,Math.PI,0);
+  ctx.ellipse(cx,cy,R,R*sb,0,0,Math.PI);
+  ctx.closePath();
+  const g=ctx.createLinearGradient(0,cy-R,0,cy+R*sb);
+  g.addColorStop(0,P.bg);g.addColorStop(1,P.panel);
+  ctx.globalAlpha=state.nv?1:.82;
+  ctx.fillStyle=g;ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.strokeStyle=P.line;ctx.lineWidth=1;ctx.stroke();
+
+  // ground disc inside the ring
+  ctx.beginPath();ctx.ellipse(cx,cy,R,R*sb,0,0,7);
+  const gg=ctx.createLinearGradient(0,cy-R*sb,0,cy+R*sb);
+  gg.addColorStop(0,'rgba(0,0,0,.30)');gg.addColorStop(1,'rgba(0,0,0,.58)');
+  ctx.fillStyle=gg;ctx.fill();
+
+  // wireframe: altitude rings + meridian ribs
+  ctx.setLineDash([3,5]);ctx.strokeStyle=P.line;ctx.lineWidth=1;
+  for(const a of[30,60]){
+    ctx.beginPath();
+    ctx.ellipse(cx,cy-R*sind(a)*cb,R*cosd(a),Math.max(.1,R*cosd(a)*sb),0,0,7);
+    ctx.stroke();
+  }
+  ctx.globalAlpha=.45;
+  for(let k=0;k<8;k++){
+    ctx.beginPath();
+    for(let a=0;a<=90;a+=6){
+      const p=project3D(a,k*45,cx,cy,R,sb,cb);
+      a===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha=1;ctx.setLineDash([]);
+
+  // horizon ring
+  ctx.beginPath();ctx.ellipse(cx,cy,R,R*sb,0,0,7);
+  ctx.strokeStyle=P.dim;ctx.globalAlpha=.75;ctx.lineWidth=1.5;ctx.stroke();
+  ctx.globalAlpha=1;ctx.lineWidth=1;
+
+  // zenith marker
+  const zy=cy-R*cb;
+  ctx.strokeStyle=P.faint;
+  ctx.beginPath();ctx.moveTo(cx-4,zy);ctx.lineTo(cx+4,zy);ctx.moveTo(cx,zy-4);ctx.lineTo(cx,zy+4);ctx.stroke();
+
+  // compass ring — rotates as you drag
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(let k=0;k<8;k++){
+    const p=project3D(0,k*45,cx,cy,R,sb,cb);
+    const dx=p.x-cx,dy=p.y-cy,m=Math.hypot(dx,dy)||1;
+    const card=k%2===0;
+    ctx.fillStyle=card?P.dim:P.faint;
+    ctx.font=(card?'600 13px':'10px')+' -apple-system,system-ui,sans-serif';
+    ctx.fillText(COMPASS_AB[k],p.x+dx/m*(card?17:13),p.y+dy/m*(card?15:11));
+  }
+
+  // objects — faintest first; near side drawn a touch larger for depth
   for(const o of sky.objs.filter(o=>o.alt>0).sort((a,b)=>b.mag-a.mag)){
-    const {x,y}=pos(o);
-    drawObj(ctx,x,y,o,P,tw);
+    const p=project3D(o.alt,o.az,cx,cy,R,sb,cb);
+    drawObj(ctx,p.x,p.y,o,P,tw,1+0.16*p.near);
   }
   placeLabels(ctx,P);
+
+  ctx.fillStyle=P.faint;ctx.font='10px -apple-system,system-ui,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillText('drag to spin · rim = horizon · top = straight up',cx,h-8);
 }
 
 function drawStrip(ctx,w,h,tw){
@@ -723,18 +777,19 @@ function drawStrip(ctx,w,h,tw){
 /* stable per-star twinkle phase */
 function twPhase(name){let n=0;for(const c of name)n+=c.charCodeAt(0);return n%13;}
 
-function drawObj(ctx,x,y,o,P,tw){
+function drawObj(ctx,x,y,o,P,tw,mul){
+  mul=mul||1;
   if(o.type==='sun'){
-    const g=ctx.createRadialGradient(x,y,0,x,y,20);
+    const g=ctx.createRadialGradient(x,y,0,x,y,20*mul);
     g.addColorStop(0,P.accent);g.addColorStop(1,'transparent');
-    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,20,0,7);ctx.fill();
-    ctx.fillStyle=P.accent;ctx.beginPath();ctx.arc(x,y,7,0,7);ctx.fill();
-    labelQueue.push({x,y,txt:'Sun',off:10,mag:o.mag});
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,20*mul,0,7);ctx.fill();
+    ctx.fillStyle=P.accent;ctx.beginPath();ctx.arc(x,y,7*mul,0,7);ctx.fill();
+    labelQueue.push({x,y,txt:'Sun',off:10*mul,mag:o.mag});
   }else if(o.type==='moon'){
-    drawMoonGlyph(ctx,x,y,8,o.frac,o.age<180,state.loc.lat<0);
-    labelQueue.push({x,y,txt:'Moon',off:11,mag:o.mag});
+    drawMoonGlyph(ctx,x,y,8*mul,o.frac,o.age<180,state.loc.lat<0);
+    labelQueue.push({x,y,txt:'Moon',off:11*mul,mag:o.mag});
   }else{
-    const r=Math.max(2,Math.min(7,5.5-o.mag*1.1));
+    const r=Math.max(2,Math.min(7,5.5-o.mag*1.1))*mul;
     const col=objColor(o,P);
     /* only stars twinkle — planets shine steady, just like the real sky */
     if(o.type==='star'&&tw)ctx.globalAlpha=.72+.28*Math.sin(tw/430+twPhase(o.name));
@@ -768,9 +823,35 @@ function placeLabels(ctx,P){
   }
 }
 
-/* chart tap → nearest object */
-$('chart').addEventListener('click',ev=>{
-  const r=$('chart').getBoundingClientRect();
+/* drag to spin / tilt the dome */
+const chartEl=$('chart');
+chartEl.addEventListener('pointerdown',ev=>{
+  if(state.mode!=='dome')return;
+  view.drag={x:ev.clientX,y:ev.clientY,az:view.az,tilt:view.tilt};
+  view.moved=false;
+  try{chartEl.setPointerCapture(ev.pointerId);}catch(e){}
+});
+chartEl.addEventListener('pointermove',ev=>{
+  if(!view.drag)return;
+  const dx=ev.clientX-view.drag.x, dy=ev.clientY-view.drag.y;
+  if(Math.abs(dx)+Math.abs(dy)>7)view.moved=true;
+  if(view.moved){
+    view.az=rev(view.drag.az-dx*.45);
+    view.tilt=Math.max(18,Math.min(42,view.drag.tilt+dy*.18));
+    renderChart();
+  }
+});
+const endDrag=()=>{view.drag=null;};
+chartEl.addEventListener('pointerup',endDrag);
+chartEl.addEventListener('pointercancel',endDrag);
+chartEl.addEventListener('dblclick',()=>{
+  if(state.mode==='dome'){view.az=0;view.tilt=28;renderChart();}
+});
+
+/* chart tap → nearest object (ignored if the tap was a drag) */
+chartEl.addEventListener('click',ev=>{
+  if(view.moved){view.moved=false;return;}
+  const r=chartEl.getBoundingClientRect();
   const x=ev.clientX-r.left, y=ev.clientY-r.top;
   let best=null,bd=26;
   for(const z of hitZones){
@@ -843,6 +924,8 @@ function setMode(m){
   state.mode=m;save('sky.mode',m);
   $('modeDome').classList.toggle('on',m==='dome');
   $('modeStrip').classList.toggle('on',m==='strip');
+  /* dome owns its touches (drag-to-spin); strip lets the page scroll */
+  $('chart').style.touchAction=m==='dome'?'none':'manipulation';
   renderChart();
 }
 $('modeDome').onclick=()=>setMode('dome');

@@ -14,8 +14,9 @@ beginner-friendly horizon strip. Tap anything for a short, friendly story.
 
 - Sun, Moon (with phase), Mercury–Saturn, and 21 of the brightest stars —
   positions computed entirely on-device with low-precision Meeus/Schlyter formulas
-- Two views: **Sky dome** (horizon = edge, straight up = centre) and
-  **Horizon strip** ("look SE, about 30° up")
+- Two views: a **3D sky dome** you can drag to spin and tilt (rim = horizon,
+  top = straight up, compass ring turns with you) and a **horizon strip**
+  ("look SE, about 30° up")
 - Plain-language blurbs, no jargon, no engagement mechanics
 - **Rise & set times** for every object, and sunset / first-dark / sunrise
   for your location
