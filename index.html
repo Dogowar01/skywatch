@@ -174,6 +174,24 @@ h2{font-size:1.15rem;margin:22px 2px 4px;font-weight:600}
 }
 .about{font-size:.78rem;color:var(--faint);line-height:1.6;margin-top:14px}
 #suntimes{font-size:.83rem;color:var(--dim);margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+#pairline{
+  display:none;font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  color:var(--accent);font-size:.95rem;line-height:1.5;
+  margin-top:8px;border-top:1px solid var(--line);padding-top:8px;
+}
+.hintcard{display:flex;gap:12px;align-items:center;font-size:.85rem;color:var(--dim);line-height:1.5}
+.hintcard b{color:var(--ink);font-weight:600}
+.hintcard button{flex:0 0 auto;min-height:34px;padding:4px 12px;color:var(--faint);font-size:1rem}
+#toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(18px + env(safe-area-inset-bottom));z-index:60;
+  background:var(--panelA);border:1px solid var(--accent);border-radius:14px;
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  padding:10px 14px;display:flex;gap:14px;align-items:center;
+  font-size:.88rem;white-space:nowrap;box-shadow:0 8px 30px rgba(0,0,0,.5);
+}
+#toast[hidden]{display:none}
+#toast button{color:var(--accent);border-color:var(--accent);min-height:34px;padding:5px 12px}
 .tip{
   font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
   font-style:italic;font-size:.88rem;color:var(--dim);line-height:1.55;
@@ -199,6 +217,13 @@ footer{margin-top:34px;text-align:center;color:var(--faint);font-size:.72rem;let
     <div id="status"></div>
     <div id="locline"></div>
     <div id="suntimes"></div>
+    <div id="pairline"></div>
+  </div>
+
+  <div class="card hintcard" id="installHint" style="display:none">
+    <span>Take Sky outside — tap <b>Share</b>, then <b>Add to Home Screen</b>.
+    It installs like an app and works offline under the stars.</span>
+    <button id="hintDismiss" aria-label="Dismiss">&#215;</button>
   </div>
 
   <div class="card">
@@ -217,6 +242,10 @@ footer{margin-top:34px;text-align:center;color:var(--faint);font-size:.72rem;let
   <h2>Up right now</h2>
   <p class="sub" id="listSub"></p>
   <div id="list"></div>
+
+  <h2 id="laterHead" style="display:none">Later tonight</h2>
+  <p class="sub" id="laterSub" style="display:none">Still below the horizon — tap anything for details</p>
+  <div id="laterList"></div>
 
   <div class="card tip" id="tipCard"></div>
 
@@ -278,6 +307,11 @@ footer{margin-top:34px;text-align:center;color:var(--faint);font-size:.72rem;let
         <small>Low-glare red that keeps your eyes adjusted to the dark.</small></span>
       <input type="checkbox" id="setNv">
     </div>
+    <div class="setrow">
+      <span class="lbl">Constellation figures
+        <small>Faint stick-figures — the Southern Cross, Orion, Scorpius and friends.</small></span>
+      <input type="checkbox" id="setConst">
+    </div>
 
     <div class="sethead">Spotted log</div>
     <div class="setrow">
@@ -288,6 +322,11 @@ footer{margin-top:34px;text-align:center;color:var(--faint);font-size:.72rem;let
     <p class="about" id="setAbout"></p>
     <button class="close" id="setClose">Close</button>
   </div>
+</div>
+
+<div id="toast" hidden>
+  <span>Sky has been updated</span>
+  <button id="toastBtn">Reload</button>
 </div>
 
 <script>
@@ -439,6 +478,57 @@ const STARS=[
 ];
 const PLANET_COLOR={mercury:'#cfc4b4',venus:'#fff2cf',mars:'#ff8e5f',jupiter:'#f2e2ba',saturn:'#eed69a'};
 
+/* ---------- constellation line-figures (J2000: RA h, Dec °) ---------- */
+const CONSTELLATIONS=[
+ {name:'Southern Cross',
+  stars:[[12.4433,-63.099],[12.7953,-59.689],[12.5194,-57.113],[12.2524,-58.749]],
+  segs:[[0,2],[1,3]]},
+ {name:'The Pointers',
+  stars:[[14.6599,-60.834],[14.0637,-60.373]],
+  segs:[[0,1]]},
+ {name:'Orion',
+  stars:[[5.9195,7.407],[5.4188,6.350],[5.5334,-0.299],[5.6036,-1.202],[5.6793,-1.943],[5.2423,-8.202],[5.7959,-9.670]],
+  segs:[[0,1],[1,2],[2,3],[3,4],[4,0],[2,5],[4,6],[5,6]]},
+ {name:'Scorpius',
+  stars:[[16.0906,-19.805],[16.0056,-22.622],[15.9809,-26.114],[16.3531,-25.593],[16.4901,-26.432],[16.5981,-28.216],[16.8361,-34.293],[16.8643,-38.048],[16.9097,-42.361],[17.2026,-43.239],[17.6222,-42.998],[17.7081,-39.030],[17.5601,-37.104]],
+  segs:[[0,1],[2,1],[1,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]},
+ {name:'Big Dipper',
+  stars:[[13.7923,49.313],[13.3987,54.925],[12.9004,55.960],[12.2571,57.033],[11.8972,53.695],[11.0307,56.383],[11.0621,61.751]],
+  segs:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]]},
+ {name:'Cassiopeia',
+  stars:[[0.1529,59.150],[0.6751,56.537],[0.9451,60.717],[1.4302,60.235],[1.9066,63.670]],
+  segs:[[0,1],[1,2],[2,3],[3,4]]},
+];
+
+/* faint stick-figures on either chart; proj(alt,az) → screen point */
+function drawConstellations(ctx,P,proj,maxDx){
+  if(!state.constel)return;
+  for(const C of CONSTELLATIONS){
+    const pts=C.stars.map(s=>{
+      const aa=altAz(s[0]*15,s[1],sky.lst,state.loc.lat);
+      return aa.alt>0?proj(aa.alt,aa.az):null;
+    });
+    ctx.strokeStyle=P.faint;ctx.globalAlpha=.55;ctx.lineWidth=1;
+    let drawn=0;
+    for(const seg of C.segs){
+      const a=pts[seg[0]],b=pts[seg[1]];
+      if(!a||!b||Math.abs(a.x-b.x)>maxDx)continue;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      drawn++;
+    }
+    ctx.fillStyle=P.star;ctx.globalAlpha=.45;
+    for(const p of pts)if(p){ctx.beginPath();ctx.arc(p.x,p.y,1.4,0,7);ctx.fill();}
+    const vis=pts.filter(Boolean);
+    if(drawn&&vis.length>=C.stars.length/2){
+      const mx=vis.reduce((s,p)=>s+p.x,0)/vis.length, my=vis.reduce((s,p)=>s+p.y,0)/vis.length;
+      ctx.globalAlpha=.8;ctx.fillStyle=P.faint;
+      ctx.font='italic 10px Georgia,serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(C.name,mx,my-11);
+    }
+  }
+  ctx.globalAlpha=1;
+}
+
 /* ---------- plain-language blurbs for solar-system objects ---------- */
 const BODY_INFO={
   sun:{name:'Sun',kind:'Our star',blurb:'The Sun is up, which is why you can’t see much else. Never look at it directly — not even through sunglasses, and especially not through binoculars. Check back after sunset and the sky will start filling in.'},
@@ -475,7 +565,7 @@ function computeSky(date,lat,lng){
   for(const s of STARS){
     objs.push({id:'star:'+s[0],name:s[0],type:'star',mag:s[3],color:s[4],blurb:s[5],...altAz(s[1]*15,s[2],lst,lat)});
   }
-  return {objs,sunAlt:sunAA.alt};
+  return {objs,sunAlt:sunAA.alt,lst};
 }
 
 /* ---------- plain-language helpers ---------- */
@@ -513,17 +603,32 @@ function darkness(sunAlt){
 }
 
 /* ---------- rise & set (sampled crossing search, next 24 h) ---------- */
-function altOfId(id,date,lat,lng){
+function posOfId(id,date,lat,lng){
   const d=dayNum(date), ut=((date.getTime()/86400000)%1+1)%1*24;
   const sun=sunCalc(d), lst=rev(rev(sun.Ls+180)+ut*15+lng);
-  if(id==='sun')return altAz(sun.ra,sun.dec,lst,lat).alt;
+  if(id==='sun')return altAz(sun.ra,sun.dec,lst,lat);
   if(id==='moon'){
     const m=moonCalc(d,sun), aa=altAz(m.ra,m.dec,lst,lat);
-    return aa.alt-asind(1/m.r)*cosd(aa.alt);
+    return {alt:aa.alt-asind(1/m.r)*cosd(aa.alt),az:aa.az};
   }
-  if(PLANET_EL[id]){const p=planetCalc(id,d,sun);return altAz(p.ra,p.dec,lst,lat).alt;}
+  if(PLANET_EL[id]){const p=planetCalc(id,d,sun);return altAz(p.ra,p.dec,lst,lat);}
   const s=STARS.find(s=>'star:'+s[0]===id);
-  return s?altAz(s[1]*15,s[2],lst,lat).alt:-90;
+  return s?altAz(s[1]*15,s[2],lst,lat):{alt:-90,az:0};
+}
+function altOfId(id,date,lat,lng){return posOfId(id,date,lat,lng).alt;}
+
+/* next time the Moon reaches a given phase age (180 = full, 0/360 = new) */
+function nextMoonPhase(target){
+  const from=effDate();
+  let prev=null;
+  for(let h=0;h<=31*24;h+=3){
+    const t=new Date(from.getTime()+h*3600000);
+    const d=dayNum(t), m=moonCalc(d,sunCalc(d));
+    const diff=((m.age-target+540)%360)-180;
+    if(prev!==null&&prev<0&&diff>=0)return t;
+    prev=diff;
+  }
+  return null;
 }
 /* next time `id` crosses `threshold` degrees, rising or setting */
 function nextCross(id,from,threshold,rising,lat,lng){
@@ -547,13 +652,14 @@ const $=id=>document.getElementById(id);
 function load(k,f){try{const v=localStorage.getItem(k);return v===null?f:JSON.parse(v);}catch(e){return f;}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 
-const APP_VER='1.3.0';
+const APP_VER='1.4.0';
 let state={
   loc:load('sky.loc',{lat:-42.882,lng:147.327,name:'Hobart',isDefault:true}),
   offset:0,                                  // minutes from now
   mode:load('sky.mode','dome'),
   nv:load('sky.nv',false),
   autogps:load('sky.autogps',true),
+  constel:load('sky.constel',true),
 };
 let spotted=load('sky.spotted',{});
 let sky=null, hitZones=[], labelQueue=[];
@@ -580,6 +686,66 @@ function renderAll(){
   renderStatus();
   renderChart();
   renderList();
+  renderLater();
+}
+
+/* "worth a look" — a solar-system body sitting close to something bright */
+function renderPairing(){
+  const el=$('pairline');
+  el.style.display='none';
+  if(sky.sunAlt>=0)return;
+  const SOLAR=['moon','venus','mars','jupiter','saturn','mercury'];
+  const bodies=sky.objs.filter(o=>SOLAR.includes(o.id)&&o.alt>3);
+  const partners=sky.objs.filter(o=>o.alt>3&&o.type!=='sun'&&(o.type!=='star'||o.mag<1.2));
+  let best=null;
+  for(const a of bodies)for(const b of partners){
+    if(a.id===b.id||(SOLAR.includes(b.id)&&SOLAR.indexOf(b.id)<SOLAR.indexOf(a.id)))continue;
+    const sep=acosd(sind(a.alt)*sind(b.alt)+cosd(a.alt)*cosd(b.alt)*cosd(a.az-b.az));
+    const lim=(a.id==='moon'||b.id==='moon')?6:5;
+    if(sep<lim&&(!best||sep<best.sep))best={a,b,sep};
+  }
+  if(!best)return;
+  el.innerHTML='&#10022; Worth a look tonight: <b>'+esc(best.a.name)+'</b> and <b>'+esc(best.b.name)+
+    '</b> are sitting close together — '+esc(compassWord(best.a.az))+', '+esc(altWords((best.a.alt+best.b.alt)/2))+'.';
+  el.style.display='';
+}
+
+/* what's still below the horizon but rising before dawn */
+let laterCache={key:'',rows:[]};
+function renderLater(){
+  const from=effDate(), {lat,lng}=state.loc;
+  const key=Math.floor(from.getTime()/600000)+'|'+lat+'|'+lng;
+  if(laterCache.key!==key){
+    const sunrise=nextCross('sun',from,0,true,lat,lng);
+    const cap=Math.min(sunrise?sunrise.getTime()+1800000:Infinity,from.getTime()+14*3600000);
+    const rows=[];
+    for(const o of sky.objs){
+      if(o.alt>0.25)continue;
+      const notable=o.type==='moon'||(o.type==='planet'&&o.id!=='mercury')||(o.type==='star'&&o.mag<=0.5);
+      if(!notable)continue;
+      const rise=nextCross(o.id,from,0,true,lat,lng);
+      if(rise&&rise.getTime()<=cap)rows.push({id:o.id,rise,riseAz:posOfId(o.id,rise,lat,lng).az});
+    }
+    rows.sort((a,b)=>a.rise-b.rise);
+    laterCache={key,rows:rows.slice(0,6)};
+  }
+  const rows=laterCache.rows;
+  $('laterHead').style.display=rows.length?'':'none';
+  $('laterSub').style.display=rows.length?'':'none';
+  const box=$('laterList');box.innerHTML='';
+  for(const row of rows){
+    const o=sky.objs.find(x=>x.id===row.id);
+    if(!o)continue;
+    const b=document.createElement('button');
+    b.className='obj hidden-day';
+    b.innerHTML='<span class="dot"><canvas width="34" height="34"></canvas></span>'+
+      '<span class="txt"><span class="nm">'+esc(o.name)+(spotted[o.id]?'<span class="tick">&#10003;</span>':'')+'</span>'+
+      '<span class="dir" style="display:block">Rises about '+esc(fmtWhen(row.rise,from))+' — look to the '+esc(compassWord(row.riseAz))+' then</span></span>'+
+      '<span class="nums">'+esc(fmtTime(row.rise))+'<br>'+compassAb(row.riseAz)+'</span>';
+    b.onclick=()=>showCard(o);
+    box.appendChild(b);
+    drawListDot(b.querySelector('canvas'),o);
+  }
 }
 
 function renderStatus(){
@@ -593,6 +759,7 @@ function renderStatus(){
   $('locLink').onclick=open;
   const l2=$('locLink2'); if(l2)l2.onclick=open;
   renderSunTimes(dk);
+  renderPairing();
 }
 
 /* sunset / first-dark / sunrise line under the status */
@@ -622,6 +789,9 @@ function fmtTime(d){
 }
 function fmtWhen(d,from){
   return fmtTime(d)+(d.getDate()!==from.getDate()?' tomorrow':'');
+}
+function fmtDate(d){
+  return d.toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'});
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
@@ -781,6 +951,9 @@ function drawDome(ctx,w,h,tw){
   ctx.strokeStyle=P.faint;
   ctx.beginPath();ctx.moveTo(cx-4,zy);ctx.lineTo(cx+4,zy);ctx.moveTo(cx,zy-4);ctx.lineTo(cx,zy+4);ctx.stroke();
 
+  // constellation figures
+  drawConstellations(ctx,P,(alt,az)=>project3D(alt,az,cx,cy,R,sb,cb),Infinity);
+
   // compass ring — rotates as you drag
   ctx.textAlign='center';ctx.textBaseline='middle';
   for(let k=0;k<8;k++){
@@ -825,6 +998,8 @@ function drawStrip(ctx,w,h,tw){
   ctx.textAlign='center';ctx.textBaseline='top';
   const marks=['N','NE','E','SE','S','SW','W','NW','N'];
   for(let i=0;i<9;i++){ctx.fillText(marks[i],X(i*45),y0+6);}
+  drawConstellations(ctx,P,(alt,az)=>({x:X(az),y:Y(alt)}),w/4);
+
   for(const o of sky.objs.filter(o=>o.alt>0).sort((a,b)=>b.mag-a.mag)){
     drawObj(ctx,X(o.az),Y(o.alt),o,P,tw);
   }
@@ -926,6 +1101,11 @@ function showCard(o){
   let extra='';
   if(o.type==='moon'){
     extra='<p class="blurb" style="color:var(--dim)">'+phaseName(o.age)+' — '+Math.round(o.frac*100)+'% lit tonight.</p>';
+    const nf=nextMoonPhase(180),nn=nextMoonPhase(0),bits=[];
+    if(nf)bits.push({t:nf,txt:'full Moon '+fmtDate(nf)});
+    if(nn)bits.push({t:nn,txt:'new Moon '+fmtDate(nn)});
+    bits.sort((a,b)=>a.t-b.t);
+    if(bits.length)extra+='<p class="rise">Next '+esc(bits.map(b=>b.txt).join(' · then '))+'.</p>';
   }
   const below=o.alt<=0.25;
   const where=below?'Below the horizon right now — not visible.':whereSentence(o);
@@ -1052,6 +1232,7 @@ function renderSettings(){
     '<small>'+l.lat.toFixed(3)+'°, '+l.lng.toFixed(3)+'°'+(l.isDefault?' — default, not yours yet':'')+'</small>';
   $('setAuto').checked=state.autogps;
   $('setNv').checked=state.nv;
+  $('setConst').checked=state.constel;
   const n=Object.keys(spotted).length;
   $('setSpotCount').textContent=n===0?'Nothing ticked off yet':(n+' object'+(n>1?'s':'')+' spotted');
   $('setAbout').innerHTML='Sky v'+APP_VER+' · Signal9<br>All astronomy is computed on your phone. No accounts, no tracking, nothing leaves the device. Works fully offline once loaded.';
@@ -1063,6 +1244,7 @@ $('setGps').onclick=()=>doGps($('setGps'),'&#9673; Find me');
 $('setManual').onclick=()=>{$('setOv').classList.remove('show');$('locOv').classList.add('show');};
 $('setAuto').onchange=e=>{state.autogps=e.target.checked;save('sky.autogps',state.autogps);};
 $('setNv').onchange=e=>setNightVision(e.target.checked);
+$('setConst').onchange=e=>{state.constel=e.target.checked;save('sky.constel',state.constel);renderChart();};
 $('setClearSpot').onclick=()=>{
   if(Object.keys(spotted).length && !confirm('Clear your whole spotted log?'))return;
   spotted={};save('sky.spotted',spotted);
@@ -1105,10 +1287,25 @@ function firstRunSheet(){
   else firstRunSheet();
 })();
 
-/* service worker */
+/* iPhone install hint — once, and only outside the installed app */
+(function(){
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+  if(isIOS&&!standalone&&!load('sky.installHint',false)){
+    $('installHint').style.display='';
+    $('hintDismiss').onclick=()=>{save('sky.installHint',true);$('installHint').style.display='none';};
+  }
+})();
+
+/* service worker + "new version ready" toast */
 if('serviceWorker' in navigator && location.protocol==='https:'){
+  const hadController=!!navigator.serviceWorker.controller;
   navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(hadController)$('toast').hidden=false;
+  });
 }
+$('toastBtn').onclick=()=>location.reload();
 </script>
 </body>
 </html>

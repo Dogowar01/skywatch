@@ -18,8 +18,14 @@ beginner-friendly horizon strip. Tap anything for a short, friendly story.
   top = straight up, compass ring turns with you) and a **horizon strip**
   ("look SE, about 30° up")
 - Plain-language blurbs, no jargon, no engagement mechanics
-- **Rise & set times** for every object, and sunset / first-dark / sunrise
-  for your location
+- **Constellation figures** — faint stick-figures for the Southern Cross,
+  the Pointers, Orion, Scorpius, the Big Dipper and Cassiopeia (toggleable)
+- **Later tonight** — what's still below the horizon but rising before dawn,
+  with rise times and directions
+- **"Worth a look" callouts** when the Moon or a planet sits close to
+  something else bright
+- **Rise & set times** for every object, sunset / first-dark / sunrise for
+  your location, and next full/new Moon dates on the Moon's card
 - Time scrubber — see what's up at 9pm before you head out
 - Stars drawn in their real colours (orange Betelgeuse, blue-white Rigel) and
   gently twinkling — planets shine steady, just like the real sky
